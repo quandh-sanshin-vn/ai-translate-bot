@@ -1,0 +1,7 @@
+
+/config/*
+*.json
+path/
+.idea/
+.DS_Store
+.env

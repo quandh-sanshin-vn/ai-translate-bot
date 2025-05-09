@@ -1,0 +1,8 @@
+streamlit
+flask
+torch
+transformers
+gspread==5.0.0
+google-auth==2.3.3
+pandas
+datasets
