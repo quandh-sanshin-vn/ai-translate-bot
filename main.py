@@ -12,7 +12,7 @@ app = Flask(__name__)
 CREDENTIALS_FILE = 'test-training-data-245841565d66.json'
 SPREADSHEET_ID = '1spg80mi-dbMZX_97DJrv2PQnA_f7pr1Elprvn3CP9WU'
 SHEET_NAME = 'LOG_COMMON'
-MODEL_NAME = "facebook/nllb-200-1.3B"
+MODEL_NAME = "facebook/nllb-200-3.3B"
 SPECIAL_TERMS_TO_ENGLISH = {
     "チェックボックス": "checkbox",
     "ボタン": "button"
@@ -192,4 +192,4 @@ def log_to_sheet():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5001)
