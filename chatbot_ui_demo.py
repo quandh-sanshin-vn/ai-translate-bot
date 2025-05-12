@@ -54,7 +54,8 @@ if st.button("Dịch"):
             "inputs": {
                 "text": source_text,
                 "source_lang": st.session_state.source_lang,
-                "target_lang": st.session_state.target_lang
+                "target_lang": st.session_state.target_lang,
+                "sheet_name": "LOG_COMMON"
             },
             "response_mode": "blocking",
             "user": "abc-123"
