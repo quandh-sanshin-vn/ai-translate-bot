@@ -163,7 +163,7 @@ def translate(sheet_name=None):
 
     end_time = time.time()
     inference_time = end_time - start_time
-    write_to_google_sheet(sheet_name, article, translated_text, source_lang, target_lang, current_device, inference_time)
+    write_to_google_sheet(sheet_name, data.get('text'), translated_text, source_lang, target_lang, current_device, inference_time)
 
     return jsonify({'translated_text': translated_text})
 
