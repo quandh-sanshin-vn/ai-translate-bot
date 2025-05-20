@@ -13,12 +13,6 @@ CREDENTIALS_FILE = 'test-training-data-245841565d66.json'
 SPREADSHEET_ID = '1spg80mi-dbMZX_97DJrv2PQnA_f7pr1Elprvn3CP9WU'
 SHEET_NAME = 'LOG_COMMON'
 MODEL_NAME = "facebook/nllb-200-1.3B"
-SPECIAL_TERMS_TO_ENGLISH = {
-    "チェックボックス": "checkbox",
-    "ボタン": "button"
-}
-
-
 
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, token=True)
 model = AutoModelForSeq2SeqLM.from_pretrained(MODEL_NAME, torch_dtype=torch.float16)
@@ -40,10 +34,9 @@ def authenticate_google_sheets():
 def load_special_terms_from_sheet():
     # Xác thực Google Sheets
     client = authenticate_google_sheets()
-    sheet = client.open("DATA_TRAINING_AI_TRANSLATE").worksheet("SPECIAL_TERMS_TO_ENGLISH")
+    sheet = client.open_by_key(SPREADSHEET_ID).worksheet("JP_TO_ENG")
     data = sheet.get_all_values()
 
-    # Chuyển dữ liệu thành dictionary
     special_terms_to_english = {row[0]: row[1] for row in data if len(row) >= 2}  # Cột A -> key, Cột B -> value
     return special_terms_to_english
 
@@ -75,9 +68,10 @@ def translate_no_sheet_name():
 
     current_device = "GPU" if torch.cuda.is_available() else "CPU"
     print(f"Current Device: {current_device}")
+    special_terms = load_special_terms_from_sheet()
 
     replaced_terms = {}
-    for term, english_term in SPECIAL_TERMS_TO_ENGLISH.items():
+    for term, english_term in special_terms.items():
         placeholder = f"[SPECIAL_TERM_{len(replaced_terms)}]"
         article = article.replace(term, placeholder)
         replaced_terms[placeholder] = english_term
@@ -119,22 +113,23 @@ def translate_no_sheet_name():
     return jsonify({'translated_text': translated_text})
 
 @app.route('/translate', methods=['POST'])
-def translate():
+def translate(sheet_name=None):
     start_time = time.time()
     data = request.get_json()
-    article = data.get('text')  # Văn bản gốc từ API
+    article = data.get('text')  # Input text
     source_lang = data.get('source_lang', 'ja')
     target_lang = data.get('target_lang', 'vi')
-    sheet_name = data.get('sheet_name', SHEET_NAME)
+    sheet_name = sheet_name or data.get('sheet_name', SHEET_NAME)
 
     current_device = "GPU" if torch.cuda.is_available() else "CPU"
-    print(f"Current Device: {current_device}")
-
+    special_terms = load_special_terms_from_sheet()
+    sorted_special_terms = sorted(special_terms.items(), key=lambda x: len(x[0]), reverse=True)
     replaced_terms = {}
-    for term, english_term in SPECIAL_TERMS_TO_ENGLISH.items():
+    for term, english_term in sorted_special_terms:
         placeholder = f"[SPECIAL_TERM_{len(replaced_terms)}]"
-        article = article.replace(term, placeholder)
-        replaced_terms[placeholder] = english_term
+        if term in article:
+            article = article.replace(term, placeholder)
+            replaced_terms[placeholder] = english_term
 
     if source_lang == 'ja' and target_lang == 'vi':
         tokenizer.src_lang = "jpn_Jpan"
@@ -153,6 +148,7 @@ def translate():
     else:
         return jsonify({'error': 'Unsupported target language'}), 400
 
+    # Generate translation
     translated_tokens = model.generate(
         **inputs,
         forced_bos_token_id=forced_bos_token_id,
@@ -167,18 +163,15 @@ def translate():
 
     end_time = time.time()
     inference_time = end_time - start_time
-    write_to_google_sheet(sheet_name, data.get('text'), translated_text, source_lang, target_lang, current_device, inference_time)
+    write_to_google_sheet(sheet_name, article, translated_text, source_lang, target_lang, current_device, inference_time)
 
-    print(f"Inference Time: {inference_time:.2f} seconds")
     return jsonify({'translated_text': translated_text})
-
 
 @app.route('/log_to_gg_sheet', methods=['POST'])
 def log_to_sheet():
-    # Nhận dữ liệu từ POST request
     data = request.get_json()
-    text = data.get('text')  # Chỉ lấy văn bản dịch
-    row_number = data.get('row_number')  # Lấy số dòng
+    text = data.get('text')
+    row_number = data.get('row_number')
 
     if not text:
         return jsonify({'error': 'No translated text provided'}), 400
@@ -192,4 +185,4 @@ def log_to_sheet():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5001)
