@@ -18,9 +18,9 @@ if 'target_lang' not in st.session_state:
 if 'translated_text' not in st.session_state:
     st.session_state.translated_text = ""
 if 'history' not in st.session_state:
-    st.session_state.history = []  # Lưu trữ lịch sử dịch, giới hạn 30 mục
+    st.session_state.history = []
 if 'row_number' not in st.session_state:
-    st.session_state.row_number = None  # Chưa có dòng nào
+    st.session_state.row_number = None
 
 st.title("Dịch Văn Bản với NLLB-200")
 st.write("Nhập văn bản và chọn ngôn ngữ đích để dịch:")
