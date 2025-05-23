@@ -5,6 +5,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 import datetime
 import time
+from peft import PeftModel
 
 # Flask app
 app = Flask(__name__)
@@ -14,14 +15,31 @@ CREDENTIALS_FILE = 'test-training-data-245841565d66.json'
 SPREADSHEET_ID = '1spg80mi-dbMZX_97DJrv2PQnA_f7pr1Elprvn3CP9WU'
 SHEET_NAME = 'LOG_COMMON'
 MODEL_NAME = "facebook/nllb-200-1.3B"
+model_dir = "./results"
 
 # Load model and tokenizer
-tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, token=True)
-model = AutoModelForSeq2SeqLM.from_pretrained(MODEL_NAME, torch_dtype=torch.float16)
+# tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, token=True)
+# model = AutoModelForSeq2SeqLM.from_pretrained(MODEL_NAME, torch_dtype=torch.float16)
 
+tokenizer = AutoTokenizer.from_pretrained(model_dir)
+base_model = AutoModelForSeq2SeqLM.from_pretrained(MODEL_NAME)
+model = PeftModel.from_pretrained(base_model, model_dir)
+model.eval()
 # Set device
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
+
+# test_sentence = "ボタン"
+# baseline_model = AutoModelForSeq2SeqLM.from_pretrained(MODEL_NAME)
+# baseline_output = baseline_model.generate(test_sentence, max_length=20)
+# baseline_translation = tokenizer.batch_decode(baseline_output, skip_special_tokens=True)[0]
+#
+# # Model sau khi fine-tune
+# fine_tuned_output = model.generate(test_sentence, max_length=20)
+# fine_tuned_translation = tokenizer.batch_decode(fine_tuned_output, skip_special_tokens=True)[0]
+#
+# print(f"Baseline Translation: {baseline_translation}")
+# print(f"Fine-tuned Translation: {fine_tuned_translation}")
 
 
 # Authenticate Google Sheets
